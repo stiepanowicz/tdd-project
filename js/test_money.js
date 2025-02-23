@@ -1,3 +1,11 @@
+// wish list for handling errors
+
+// 1. the evaluate method should should signal an explicit error when one or more necessary exchange rates is missing
+
+// 2. the error message should be 'greedy' - that is, it should indicate all missing exchange rates that prevent a Portfolio from being evaluated, not just the first missing exchange rate
+
+// 3. to prevent the error from being ignored by the caller, no valid Money should be returned when an error happens due to missing exchange rates
+
 const Money = require('./money');
 const Portfolio = require('./portfolio');
 const assert = require('assert'); // synchronous, legacy CommonJS
@@ -23,7 +31,6 @@ class MoneyTest {
         portfolio.add(fiveDollars, tenDollars);
         assert.deepStrictEqual(portfolio.evaluate("USD"), fifteenDollars);
     }
-
     testAdditionOfDollarsAndEuros() {
         let fiveDollars = new Money(5, "USD");
         let tenEuros = new Money(10, "EUR");
@@ -33,7 +40,6 @@ class MoneyTest {
         assert.deepStrictEqual(portfolio.evaluate("USD"), expectedValue);
         // console.log(portfolio.moneys);
     }
-
     testAdditionOfDollarsAndWons() {
         let oneDollar = new Money(1, "USD");
         let elevenHundredWon = new Money(1100, "KRW");
@@ -42,6 +48,18 @@ class MoneyTest {
         let expectedValue = new Money(2200, "KRW");
         assert.deepStrictEqual(portfolio.evaluate("KRW"), expectedValue);
     }
+    testAdditionWithMultipleMissingExchangeRates() {
+        let oneDollar = new Money(1, "USD");
+        let oneEuro = new Money(1, "EUR");
+        let oneWon = new Money(1, "KRW");
+        let portfolio = new Portfolio();
+        portfolio.add(oneDollar, oneEuro, oneWon);
+        let expectedError = new Error(
+            "Missing exchange rate(s): [USD->Kalganid,EUR->Kalganid,KRW->Kalganid]");
+            assert.throws(function() {portfolio.evaluate("Kalganid")}, expectedError);
+    }
+
+
     getAllTestMethods() {
         let moneyPrototype = MoneyTest.prototype;
         let allProps = Object.getOwnPropertyNames(moneyPrototype);
