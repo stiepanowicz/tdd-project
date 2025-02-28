@@ -1,10 +1,5 @@
-// wish list for handling errors
-
-// 1. the evaluate method should should signal an explicit error when one or more necessary exchange rates is missing
-
-// 2. the error message should be 'greedy' - that is, it should indicate all missing exchange rates that prevent a Portfolio from being evaluated, not just the first missing exchange rate
-
-// 3. to prevent the error from being ignored by the caller, no valid Money should be returned when an error happens due to missing exchange rates
+// todo
+// randomize testMethods order of execution
 
 const Money = require('./money');
 const Portfolio = require('./portfolio');
@@ -14,7 +9,7 @@ const assert = require('assert'); // synchronous, legacy CommonJS
 
 
 class MoneyTest {
-    constructor() {
+    setUp() {
         this.bank = new Bank();
         this.bank.addExchangeRate("EUR", "USD", 1.2);
         this.bank.addExchangeRate("USD", "KRW", 1100);
@@ -64,12 +59,13 @@ class MoneyTest {
             "Missing exchange rate(s): [USD->Kalganid,EUR->Kalganid,KRW->Kalganid]");
             assert.throws(() => portfolio.evaluate(this.bank, "Kalganid"), expectedError);
     }
-    testConversion() {
-        let bank = new Bank();
-        bank.addExchangeRate("EUR", "USD", 1.2);
+    testConversionWithDifferentRatesBetweenTwoCurrencies() {
         let tenEuros = new Money(10, "EUR");
         assert.deepStrictEqual(
-            bank.convert(tenEuros, "USD"), new Money(12, "USD"));
+            this.bank.convert(tenEuros, "USD"), new Money(12, "USD"));
+        this.bank.addExchangeRate("EUR", "USD", 1.3);
+        assert.deepStrictEqual(
+            this.bank.convert(tenEuros, "USD"), new Money(13, "USD"));
     }
     testConversionWithMissingExchangeRate() {
         let bank = new Bank();
@@ -86,12 +82,14 @@ class MoneyTest {
         });
         return testMethods;
     }
+
     runAllTests() {
         let testMethods = this.getAllTestMethods();
         testMethods.forEach(m => {
             console.log("Running %s()", m);
             let method = Reflect.get(this, m);
             try {
+                this.setUp();
                 Reflect.apply(method, this, []);
             } catch (e) {
                 if (e instanceof assert.AssertionError) {
